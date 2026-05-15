@@ -289,7 +289,8 @@
     width: 100%;
     max-width: 800px;
     margin: 0 auto;
-    padding: 40px 24px 60px;
+    padding: 60px 24px 80px;
+    border-top: 1px solid var(--border);
   }
 
   .history-strip {
@@ -1419,6 +1420,11 @@
       const t=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
       pickHistory.unshift({round:roundNum,names:winners,time:t});
       renderHistory();
+
+      // Auto-scroll to results
+      setTimeout(()=>{
+        historyStrip.scrollIntoView({behavior:'smooth', block:'start'});
+      }, 400);
     },600);
   }
 
