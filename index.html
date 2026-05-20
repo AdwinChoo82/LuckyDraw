@@ -316,6 +316,19 @@
     width:6px;height:6px;border-radius:50%;background:var(--accent);
   }
 
+  .export-log-btn {
+    margin-left:auto;
+    background:none;border:1px solid var(--border);border-radius:6px;
+    padding:3px 10px;cursor:pointer;
+    font-family:'JetBrains Mono',monospace;font-size:.62rem;font-weight:600;
+    color:var(--text-light);letter-spacing:1px;transition:all .2s;
+  }
+
+  .export-log-btn:hover {
+    border-color:var(--primary-light);color:var(--primary);
+    background:rgba(108,92,231,.04);
+  }
+
   .history-strip-list {
     display:flex;flex-direction:column;gap:8px;
   }
@@ -1039,7 +1052,7 @@
 <!-- Draw Results (fixed right side) -->
 <div class="history-section" id="historySection">
   <div class="history-strip" id="historyStrip" style="display:none">
-    <div class="history-strip-title"><span class="hdot"></span> Draw Results</div>
+    <div class="history-strip-title"><span class="hdot"></span> Draw Results <button class="export-log-btn" id="exportLogBtn" title="Save log file">&#128190; Save Log</button></div>
     <div class="history-strip-list" id="historyList"></div>
   </div>
 </div>
@@ -1750,6 +1763,70 @@
     });
   }
 
+  // ─── Export Log ────────────────────────────────────
+  $('exportLogBtn').addEventListener('click', exportLog);
+
+  function exportLog(){
+    if(!pickHistory.length){ alert('No draw history to export.'); return; }
+
+    const title = eventTitle.textContent || 'Lucky Draw';
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0,10);
+    const timeStr = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+
+    let log = '='.repeat(50) + '\n';
+    log += '  ' + title + ' - Draw Log\n';
+    log += '  Date: ' + dateStr + '  Time: ' + timeStr + '\n';
+    log += '='.repeat(50) + '\n\n';
+
+    // Summary by prize category
+    if(prizeCategories.length){
+      log += '--- Prize Summary ---\n';
+      prizeCategories.forEach(cat=>{
+        const vol = cat.volume || 1;
+        log += '\n[' + (cat.name || 'Unnamed') + ']';
+        if(cat.item) log += '  Item: ' + cat.item;
+        log += '  (Volume: ' + vol + ', Picked: ' + cat.winners.length + ')\n';
+        if(cat.winners.length){
+          cat.winners.forEach((w,i)=>{
+            log += '  ' + (i+1) + '. ' + w.name + '  (Round #' + w.round + ')\n';
+          });
+        } else {
+          log += '  (No winners yet)\n';
+        }
+      });
+      log += '\n';
+    }
+
+    // Full draw history
+    log += '--- Draw History ---\n\n';
+    // Reverse to show chronological order (oldest first)
+    [...pickHistory].reverse().forEach(item=>{
+      log += 'Round #' + item.round + '  [' + item.time + ']';
+      if(item.prize) log += '  Prize: ' + item.prize;
+      log += '\n';
+      item.names.forEach((n,i)=>{
+        log += '  ' + (i+1) + '. ' + n + '\n';
+      });
+      log += '\n';
+    });
+
+    log += '='.repeat(50) + '\n';
+    log += '  Total Rounds: ' + roundNum + '  |  Total Picked: ' + pickedSet.length + '\n';
+    log += '='.repeat(50) + '\n';
+
+    // Download as text file
+    const blob = new Blob([log], {type:'text/plain;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'LuckyDraw_Log_' + dateStr + '.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   // ─── Confetti ───────────────────────────────────
   function launchConfetti(){
     const canvas=document.getElementById('confetti-canvas');
@@ -1977,10 +2054,12 @@
   }
 
   function selectPrize(id){
+    const ppn = $('prizePickNumber');
     if(selectedPrizeId === id){
       selectedPrizeId = null;
       pickCount.value = 1;
       pickingCount.textContent = '1';
+      if(ppn) ppn.value = 1;
     } else {
       selectedPrizeId = id;
       const cat = prizeCategories.find(c=>c.id===id);
@@ -1988,6 +2067,7 @@
         const remaining = Math.max(1, (cat.volume||1) - cat.winners.length);
         pickCount.value = remaining;
         pickingCount.textContent = remaining;
+        if(ppn) ppn.value = remaining;
       }
     }
     renderPrizeSelector();
@@ -1999,20 +2079,21 @@
     if(!cat) return;
     winners.forEach(name => cat.winners.push({name, round}));
     renderPrizeCategories();
-    renderPrizeSelector();
 
     // Update pick count to remaining
     const remaining = Math.max(0, (cat.volume||1) - cat.winners.length);
+    const ppn = $('prizePickNumber');
     if(remaining === 0){
       selectedPrizeId = null;
       pickCount.value = 1;
       pickingCount.textContent = '1';
-      renderPrizeSelector();
+      if(ppn) ppn.value = 1;
     } else {
       pickCount.value = remaining;
       pickingCount.textContent = remaining;
-      renderPrizeSelector();
+      if(ppn) ppn.value = remaining;
     }
+    renderPrizeSelector();
   }
 </script>
 </body>
