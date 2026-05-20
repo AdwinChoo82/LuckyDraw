@@ -26,9 +26,9 @@
     --shadow-lg: 0 8px 32px rgba(108,92,231,0.12);
     --radius: 16px;
     --panel-w: 400px;
-    --card-sm-w: 68px; --card-sm-h: 46px;
-    --card-md-w: 88px; --card-md-h: 58px;
-    --card-lg-w: 110px; --card-lg-h: 72px;
+    --card-sm-w: 46px; --card-sm-h: 46px;
+    --card-md-w: 60px; --card-md-h: 60px;
+    --card-lg-w: 76px; --card-lg-h: 76px;
   }
 
   body {
@@ -183,12 +183,12 @@
     color:var(--text-light);letter-spacing:1px;
   }
 
-  /* Name card — 3D globe style */
+  /* Name card — circle style */
   .name-card {
     position: absolute;
     left: 50%;
     top: 50%;
-    border-radius: 10px;
+    border-radius: 50%;
     cursor: default;
     will-change: transform, opacity;
     transform-origin: center center;
@@ -197,7 +197,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 6px 8px;
+    padding: 4px;
     text-align: center;
   }
 
@@ -543,6 +543,112 @@
     border-color:var(--primary-light);box-shadow:0 0 0 4px rgba(108,92,231,.08);
   }
 
+  /* ── PANEL TABS ────────────────────────────────── */
+  .panel-tabs {
+    display:flex;border-bottom:1px solid var(--border);
+    position:sticky;top:65px;background:white;z-index:2;
+    padding:0 24px;
+  }
+
+  .panel-tab {
+    flex:1;padding:12px 8px;text-align:center;
+    font-family:'Space Grotesk',sans-serif;font-size:.78rem;font-weight:600;
+    color:var(--text-light);cursor:pointer;border:none;background:none;
+    border-bottom:2px solid transparent;transition:all .2s;
+    letter-spacing:1px;
+  }
+
+  .panel-tab:hover { color:var(--text-muted); }
+
+  .panel-tab.active {
+    color:var(--primary);border-bottom-color:var(--primary);
+  }
+
+  .panel-tab-content { display:none;padding:24px;flex:1; }
+  .panel-tab-content.active { display:block; }
+
+  /* Prize category styles */
+  .prize-category {
+    background:var(--bg);border:1px solid var(--border);border-radius:12px;
+    padding:16px;margin-bottom:14px;transition:all .2s;
+  }
+
+  .prize-category:hover { border-color:var(--primary-light); }
+
+  .prize-cat-header {
+    display:flex;align-items:center;gap:10px;margin-bottom:10px;
+  }
+
+  .prize-cat-color {
+    width:14px;height:14px;border-radius:50%;flex-shrink:0;
+  }
+
+  .prize-cat-name {
+    flex:1;background:none;border:none;
+    font-family:'Space Grotesk',sans-serif;font-size:.9rem;font-weight:600;
+    color:var(--text);outline:none;
+  }
+
+  .prize-cat-name::placeholder { color:var(--text-light);font-weight:400; }
+
+  .prize-cat-remove {
+    background:none;border:none;color:var(--text-light);cursor:pointer;
+    font-size:14px;padding:2px 6px;border-radius:4px;transition:all .2s;
+  }
+
+  .prize-cat-remove:hover { color:var(--accent-warm);background:rgba(253,121,168,.06); }
+
+  .prize-cat-winners {
+    display:flex;flex-wrap:wrap;gap:6px;min-height:28px;
+  }
+
+  .prize-winner-tag {
+    font-family:'JetBrains Mono',monospace;font-size:.72rem;
+    padding:4px 10px;border-radius:14px;color:#fff;
+    display:flex;align-items:center;gap:6px;
+  }
+
+  .prize-winner-remove {
+    background:none;border:none;color:rgba(255,255,255,.7);
+    cursor:pointer;font-size:11px;line-height:1;padding:0;
+  }
+
+  .prize-winner-remove:hover { color:#fff; }
+
+  .prize-cat-empty {
+    font-family:'JetBrains Mono',monospace;font-size:.7rem;
+    color:var(--text-light);font-style:italic;
+  }
+
+  .add-category-btn {
+    width:100%;padding:10px;border:2px dashed var(--border);border-radius:10px;
+    background:none;cursor:pointer;font-family:'Space Grotesk',sans-serif;
+    font-size:.8rem;font-weight:600;color:var(--text-light);
+    transition:all .2s;letter-spacing:1px;
+  }
+
+  .add-category-btn:hover {
+    border-color:var(--primary-light);color:var(--primary);
+    background:rgba(108,92,231,.02);
+  }
+
+  .prize-assign-row {
+    display:flex;align-items:center;gap:10px;margin-bottom:16px;
+    padding:12px;background:rgba(108,92,231,.03);border-radius:10px;
+    border:1px solid rgba(108,92,231,.08);
+  }
+
+  .prize-assign-row label {
+    font-family:'JetBrains Mono',monospace;font-size:.72rem;
+    color:var(--text-muted);font-weight:500;white-space:nowrap;
+  }
+
+  .prize-assign-select {
+    flex:1;background:white;border:1px solid var(--border);border-radius:8px;
+    font-family:'Space Grotesk',sans-serif;font-size:.82rem;font-weight:600;
+    color:var(--text);padding:6px 10px;outline:none;cursor:pointer;
+  }
+
   /* ── COUNTDOWN OVERLAY ─────────────────────────── */
   .countdown-overlay {
     position:fixed;inset:0;z-index:200;
@@ -652,7 +758,14 @@
     <h2>Settings &amp; Data</h2>
     <button class="panel-close" id="panelClose">&#10005;</button>
   </div>
-  <div class="panel-body">
+
+  <div class="panel-tabs">
+    <button class="panel-tab active" data-tab="settings">Settings</button>
+    <button class="panel-tab" data-tab="prizes">Prizes</button>
+  </div>
+
+  <!-- Settings Tab -->
+  <div class="panel-tab-content active" id="tabSettings" data-tab="settings">
 
     <!-- Event Title -->
     <div class="panel-section">
@@ -707,6 +820,25 @@
       <div class="name-pool" id="namePool">
         <span class="pool-empty">No names loaded yet</span>
       </div>
+    </div>
+
+  </div>
+
+  <!-- Prizes Tab -->
+  <div class="panel-tab-content" id="tabPrizes" data-tab="prizes">
+
+    <!-- Auto-assign selector -->
+    <div class="prize-assign-row">
+      <label>Auto-assign to:</label>
+      <select class="prize-assign-select" id="prizeAssignSelect">
+        <option value="">-- None --</option>
+      </select>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title"><span class="pdot" style="background:#FDCB6E"></span> Prize Categories</div>
+      <div id="prizeCategoryList"></div>
+      <button class="add-category-btn" id="addCategoryBtn">+ Add Category</button>
     </div>
 
   </div>
@@ -998,8 +1130,8 @@
 
   // ─── Build Cards (3D Globe) ─────────────────────
   const SIZES = ['card-sm','card-md','card-lg'];
-  const SIZE_W = {'card-sm':68,'card-md':88,'card-lg':110};
-  const SIZE_H = {'card-sm':46,'card-md':58,'card-lg':72};
+  const SIZE_W = {'card-sm':46,'card-md':60,'card-lg':76};
+  const SIZE_H = {'card-sm':46,'card-md':60,'card-lg':76};
   const CARD_COLORS = [
     'linear-gradient(135deg, #6C5CE7, #5A4BD1)',  // deep purple
     'linear-gradient(135deg, #00897B, #00695C)',  // dark teal
@@ -1365,7 +1497,7 @@
       const n = winnerCards.length;
 
       // Winner grid layout — positioned on right side of arena
-      const cw=110, ch=72, gap=16;
+      const cw=90, ch=90, gap=16;
       const arenaW = cardArena.offsetWidth;
       const arenaH = cardArena.offsetHeight;
       const maxCols = Math.max(1, Math.floor((arenaW*0.4 + gap)/(cw + gap)));
@@ -1422,8 +1554,13 @@
 
       const now=new Date();
       const t=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-      pickHistory.unshift({round:roundNum,names:winners,time:t});
+      const catId = prizeAssignSelect.value;
+      const catName = catId ? (prizeCategories.find(c=>c.id===+catId)||{}).name || '' : '';
+      pickHistory.unshift({round:roundNum,names:winners,time:t,prize:catName});
       renderHistory();
+
+      // Auto-assign to prize category if selected
+      assignWinnersToPrize(winners, roundNum);
 
       // Auto-scroll to results
       setTimeout(()=>{
@@ -1440,7 +1577,8 @@
     pickHistory.forEach(item=>{
       const chip=document.createElement('div');
       chip.className='history-chip';
-      chip.innerHTML=`<b>#${item.round}</b> <span>${item.names.join(', ')}</span> <span style="margin-left:auto;font-size:.7rem;color:var(--text-light)">${item.time}</span>`;
+      const prizeTag = item.prize ? `<span style="font-size:.68rem;padding:2px 8px;background:var(--primary);color:#fff;border-radius:10px;margin-left:4px">${item.prize}</span>` : '';
+      chip.innerHTML=`<b>#${item.round}</b> <span>${item.names.join(', ')}</span>${prizeTag} <span style="margin-left:auto;font-size:.7rem;color:var(--text-light)">${item.time}</span>`;
       historyList.appendChild(chip);
     });
   }
@@ -1482,6 +1620,111 @@
     const c=document.getElementById('confetti-canvas');
     c.width=window.innerWidth;c.height=window.innerHeight;
   });
+
+  // ─── Panel Tabs ──────────────────────────────────
+  const panelTabs = document.querySelectorAll('.panel-tab');
+  const tabContents = document.querySelectorAll('.panel-tab-content');
+
+  panelTabs.forEach(tab=>{
+    tab.addEventListener('click',()=>{
+      panelTabs.forEach(t=>t.classList.remove('active'));
+      tabContents.forEach(c=>c.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelector(`.panel-tab-content[data-tab="${tab.dataset.tab}"]`).classList.add('active');
+    });
+  });
+
+  // ─── Prize Categories ────────────────────────────
+  const PRIZE_COLORS = ['#6C5CE7','#00897B','#D63031','#E65100','#0984E3','#C2185B','#4A148C','#1B5E20'];
+  let prizeCategories = [];
+  // { id, name, color, winners: [{name, round}] }
+
+  const prizeCategoryList = $('prizeCategoryList');
+  const addCategoryBtn = $('addCategoryBtn');
+  const prizeAssignSelect = $('prizeAssignSelect');
+
+  addCategoryBtn.addEventListener('click',()=>{
+    const id = Date.now();
+    const color = PRIZE_COLORS[prizeCategories.length % PRIZE_COLORS.length];
+    prizeCategories.push({ id, name:'', color, winners:[] });
+    renderPrizeCategories();
+    updatePrizeAssignSelect();
+  });
+
+  function renderPrizeCategories(){
+    prizeCategoryList.innerHTML='';
+    prizeCategories.forEach((cat,ci)=>{
+      const div = document.createElement('div');
+      div.className='prize-category';
+      div.innerHTML=`
+        <div class="prize-cat-header">
+          <div class="prize-cat-color" style="background:${cat.color}"></div>
+          <input type="text" class="prize-cat-name" placeholder="Prize name (e.g. Grand Prize)" value="${cat.name}" data-idx="${ci}">
+          <button class="prize-cat-remove" data-idx="${ci}" title="Remove category">&#10005;</button>
+        </div>
+        <div class="prize-cat-winners" id="prizeWinners_${cat.id}">
+          ${cat.winners.length ? cat.winners.map((w,wi)=>`
+            <span class="prize-winner-tag" style="background:${cat.color}">
+              ${w.name}
+              <button class="prize-winner-remove" data-cat="${ci}" data-wi="${wi}" title="Remove">&#10005;</button>
+            </span>
+          `).join('') : '<span class="prize-cat-empty">No winners yet</span>'}
+        </div>
+      `;
+      prizeCategoryList.appendChild(div);
+    });
+
+    // Event: rename category
+    prizeCategoryList.querySelectorAll('.prize-cat-name').forEach(inp=>{
+      inp.addEventListener('input',e=>{
+        prizeCategories[+e.target.dataset.idx].name = e.target.value;
+        updatePrizeAssignSelect();
+      });
+    });
+
+    // Event: remove category
+    prizeCategoryList.querySelectorAll('.prize-cat-remove').forEach(btn=>{
+      btn.addEventListener('click',e=>{
+        prizeCategories.splice(+e.target.dataset.idx, 1);
+        renderPrizeCategories();
+        updatePrizeAssignSelect();
+      });
+    });
+
+    // Event: remove individual winner
+    prizeCategoryList.querySelectorAll('.prize-winner-remove').forEach(btn=>{
+      btn.addEventListener('click',e=>{
+        const ci = +e.target.dataset.cat;
+        const wi = +e.target.dataset.wi;
+        prizeCategories[ci].winners.splice(wi, 1);
+        renderPrizeCategories();
+      });
+    });
+  }
+
+  function updatePrizeAssignSelect(){
+    const val = prizeAssignSelect.value;
+    prizeAssignSelect.innerHTML='<option value="">-- None --</option>';
+    prizeCategories.forEach(cat=>{
+      const opt = document.createElement('option');
+      opt.value = cat.id;
+      opt.textContent = cat.name || 'Unnamed Prize';
+      prizeAssignSelect.appendChild(opt);
+    });
+    // Restore selection if still valid
+    if([...prizeAssignSelect.options].some(o=>o.value===val)){
+      prizeAssignSelect.value = val;
+    }
+  }
+
+  function assignWinnersToPrize(winners, round){
+    const catId = prizeAssignSelect.value;
+    if(!catId) return;
+    const cat = prizeCategories.find(c=>c.id===+catId);
+    if(!cat) return;
+    winners.forEach(name => cat.winners.push({name, round}));
+    renderPrizeCategories();
+  }
 </script>
 </body>
 </html>
