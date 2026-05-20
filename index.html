@@ -335,6 +335,114 @@
 
   @keyframes tagIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
 
+  /* ── PRIZE SELECTOR (left side panel) ──────────── */
+  .prize-selector {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 220px;
+    height: 100vh;
+    z-index: 20;
+    padding: 70px 12px 24px;
+    overflow-y: auto;
+    pointer-events: none;
+  }
+
+  .prize-selector.has-prizes {
+    pointer-events: auto;
+  }
+
+  .prize-selector-title {
+    font-family:'JetBrains Mono',monospace;
+    font-size:.72rem;color:var(--text-muted);
+    letter-spacing:2px;text-transform:uppercase;
+    margin-bottom:12px;display:flex;align-items:center;gap:8px;
+    font-weight:600;
+  }
+
+  .prize-selector-title .pdot {
+    width:6px;height:6px;border-radius:50%;background:var(--accent-warm);
+  }
+
+  .prize-selector-list {
+    display:flex;flex-direction:column;gap:8px;
+  }
+
+  .prize-selector-card {
+    padding:12px;
+    background:rgba(255,255,255,.92);backdrop-filter:blur(8px);
+    border:2px solid var(--border);border-radius:12px;
+    cursor:pointer;transition:all .2s;box-shadow:var(--shadow-sm);
+  }
+
+  .prize-selector-card:hover {
+    border-color:var(--primary-light);box-shadow:var(--shadow-md);
+  }
+
+  .prize-selector-card.active {
+    border-color:var(--primary);background:rgba(108,92,231,.06);
+    box-shadow:0 0 0 3px rgba(108,92,231,.12);
+  }
+
+  .prize-selector-card.completed {
+    opacity:.5;cursor:default;
+  }
+
+  .prize-card-name {
+    font-family:'Space Grotesk',sans-serif;
+    font-size:.82rem;font-weight:700;color:var(--text);
+    margin-bottom:4px;display:flex;align-items:center;gap:8px;
+  }
+
+  .prize-card-dot {
+    width:10px;height:10px;border-radius:50%;flex-shrink:0;
+  }
+
+  .prize-card-item {
+    font-family:'JetBrains Mono',monospace;
+    font-size:.7rem;color:var(--text-muted);margin-bottom:4px;
+  }
+
+  .prize-card-volume {
+    font-family:'JetBrains Mono',monospace;
+    font-size:.68rem;color:var(--text-light);
+    display:flex;align-items:center;gap:4px;
+  }
+
+  .prize-card-volume b { color:var(--primary);font-size:.78rem; }
+
+  /* Prize category form fields */
+  .prize-cat-fields {
+    display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;
+  }
+
+  .prize-cat-field {
+    flex:1;display:flex;align-items:center;gap:6px;min-width:120px;
+  }
+
+  .prize-cat-field label {
+    font-family:'JetBrains Mono',monospace;font-size:.7rem;
+    color:var(--text-light);white-space:nowrap;
+  }
+
+  .prize-cat-item-input {
+    flex:1;background:white;border:1px solid var(--border);border-radius:6px;
+    font-family:'Space Grotesk',sans-serif;font-size:.8rem;
+    color:var(--text);padding:5px 8px;outline:none;min-width:0;
+    transition:border-color .2s;
+  }
+
+  .prize-cat-item-input:focus { border-color:var(--primary-light); }
+
+  .prize-cat-volume-input {
+    width:56px;background:white;border:1px solid var(--border);border-radius:6px;
+    font-family:'Space Grotesk',sans-serif;font-size:.8rem;font-weight:700;
+    color:var(--primary);padding:5px 8px;text-align:center;outline:none;
+    transition:border-color .2s;
+  }
+
+  .prize-cat-volume-input:focus { border-color:var(--primary-light); }
+
   /* ── TOP BUTTONS ───────────────────────────────── */
   .top-btns {
     position:fixed;top:20px;right:20px;z-index:50;
@@ -836,21 +944,20 @@
   <!-- Prizes Tab -->
   <div class="panel-tab-content" id="tabPrizes" data-tab="prizes">
 
-    <!-- Auto-assign selector -->
-    <div class="prize-assign-row">
-      <label>Auto-assign to:</label>
-      <select class="prize-assign-select" id="prizeAssignSelect">
-        <option value="">-- None --</option>
-      </select>
-    </div>
-
     <div class="panel-section">
       <div class="panel-section-title"><span class="pdot" style="background:#FDCB6E"></span> Prize Categories</div>
+      <p style="font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--text-light);margin-bottom:14px">Add categories, then select from the left panel to draw.</p>
       <div id="prizeCategoryList"></div>
       <button class="add-category-btn" id="addCategoryBtn">+ Add Category</button>
     </div>
 
   </div>
+</div>
+
+<!-- Prize Selector (left side) -->
+<div class="prize-selector" id="prizeSelector">
+  <div class="prize-selector-title" id="prizeSelectorTitle" style="display:none"><span class="pdot"></span> Prize Categories</div>
+  <div class="prize-selector-list" id="prizeSelectorList"></div>
 </div>
 
 <!-- ══════════ MAIN PAGE ══════════ -->
@@ -900,6 +1007,7 @@
   let excelData = null;
   let cardEls = [];
   let pickedSet = []; // tracks picked names across rounds (array to handle duplicate names)
+  let selectedPrizeId = null; // currently selected prize category for drawing
 
   // ─── DOM ────────────────────────────────────────
   const $ = id => document.getElementById(id);
@@ -1560,13 +1668,15 @@
 
       const now=new Date();
       const t=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-      const catId = prizeAssignSelect.value;
-      const catName = catId ? (prizeCategories.find(c=>c.id===+catId)||{}).name || '' : '';
+      const cat = selectedPrizeId ? prizeCategories.find(c=>c.id===selectedPrizeId) : null;
+      const catName = cat ? cat.name || '' : '';
       pickHistory.unshift({round:roundNum,names:winners,time:t,prize:catName});
       renderHistory();
 
-      // Auto-assign to prize category if selected
-      assignWinnersToPrize(winners, roundNum);
+      // Auto-assign to selected prize category
+      if(selectedPrizeId){
+        assignWinnersToPrize(winners, roundNum);
+      }
     },600);
   }
 
@@ -1644,14 +1754,13 @@
 
   const prizeCategoryList = $('prizeCategoryList');
   const addCategoryBtn = $('addCategoryBtn');
-  const prizeAssignSelect = $('prizeAssignSelect');
 
   addCategoryBtn.addEventListener('click',()=>{
     const id = Date.now();
     const color = PRIZE_COLORS[prizeCategories.length % PRIZE_COLORS.length];
-    prizeCategories.push({ id, name:'', color, winners:[] });
+    prizeCategories.push({ id, name:'', item:'', volume:1, color, winners:[] });
     renderPrizeCategories();
-    updatePrizeAssignSelect();
+    renderPrizeSelector();
   });
 
   function renderPrizeCategories(){
@@ -1664,6 +1773,16 @@
           <div class="prize-cat-color" style="background:${cat.color}"></div>
           <input type="text" class="prize-cat-name" placeholder="Prize name (e.g. Grand Prize)" value="${cat.name}" data-idx="${ci}">
           <button class="prize-cat-remove" data-idx="${ci}" title="Remove category">&#10005;</button>
+        </div>
+        <div class="prize-cat-fields">
+          <div class="prize-cat-field">
+            <label>Item:</label>
+            <input type="text" class="prize-cat-item-input" placeholder="e.g. iPad, AirPods" value="${cat.item}" data-idx="${ci}">
+          </div>
+          <div class="prize-cat-field">
+            <label>Qty:</label>
+            <input type="number" class="prize-cat-volume-input" value="${cat.volume}" min="1" max="999" data-idx="${ci}">
+          </div>
         </div>
         <div class="prize-cat-winners" id="prizeWinners_${cat.id}">
           ${cat.winners.length ? cat.winners.map((w,wi)=>`
@@ -1681,16 +1800,47 @@
     prizeCategoryList.querySelectorAll('.prize-cat-name').forEach(inp=>{
       inp.addEventListener('input',e=>{
         prizeCategories[+e.target.dataset.idx].name = e.target.value;
-        updatePrizeAssignSelect();
+        renderPrizeSelector();
+      });
+    });
+
+    // Event: update item name
+    prizeCategoryList.querySelectorAll('.prize-cat-item-input').forEach(inp=>{
+      inp.addEventListener('input',e=>{
+        prizeCategories[+e.target.dataset.idx].item = e.target.value;
+        renderPrizeSelector();
+      });
+    });
+
+    // Event: update volume
+    prizeCategoryList.querySelectorAll('.prize-cat-volume-input').forEach(inp=>{
+      inp.addEventListener('input',e=>{
+        const vol = Math.max(1, parseInt(e.target.value)||1);
+        prizeCategories[+e.target.dataset.idx].volume = vol;
+        renderPrizeSelector();
+        // If this category is currently selected, update pick count
+        const cat = prizeCategories[+e.target.dataset.idx];
+        if(selectedPrizeId === cat.id){
+          const remaining = Math.max(1, vol - cat.winners.length);
+          pickCount.value = remaining;
+          pickingCount.textContent = remaining;
+        }
       });
     });
 
     // Event: remove category
     prizeCategoryList.querySelectorAll('.prize-cat-remove').forEach(btn=>{
       btn.addEventListener('click',e=>{
-        prizeCategories.splice(+e.target.dataset.idx, 1);
+        const idx = +e.target.dataset.idx;
+        const removedId = prizeCategories[idx].id;
+        prizeCategories.splice(idx, 1);
+        if(selectedPrizeId === removedId){
+          selectedPrizeId = null;
+          pickCount.value = 1;
+          pickingCount.textContent = '1';
+        }
         renderPrizeCategories();
-        updatePrizeAssignSelect();
+        renderPrizeSelector();
       });
     });
 
@@ -1701,32 +1851,90 @@
         const wi = +e.target.dataset.wi;
         prizeCategories[ci].winners.splice(wi, 1);
         renderPrizeCategories();
+        renderPrizeSelector();
       });
     });
   }
 
-  function updatePrizeAssignSelect(){
-    const val = prizeAssignSelect.value;
-    prizeAssignSelect.innerHTML='<option value="">-- None --</option>';
-    prizeCategories.forEach(cat=>{
-      const opt = document.createElement('option');
-      opt.value = cat.id;
-      opt.textContent = cat.name || 'Unnamed Prize';
-      prizeAssignSelect.appendChild(opt);
-    });
-    // Restore selection if still valid
-    if([...prizeAssignSelect.options].some(o=>o.value===val)){
-      prizeAssignSelect.value = val;
+  // ─── Prize Selector (left panel) ────────────────
+  function renderPrizeSelector(){
+    const list = $('prizeSelectorList');
+    const title = $('prizeSelectorTitle');
+    const panel = $('prizeSelector');
+
+    if(!prizeCategories.length){
+      title.style.display='none';
+      list.innerHTML='';
+      panel.classList.remove('has-prizes');
+      return;
     }
+
+    title.style.display='flex';
+    panel.classList.add('has-prizes');
+    list.innerHTML='';
+
+    prizeCategories.forEach(cat=>{
+      const won = cat.winners.length;
+      const vol = cat.volume || 1;
+      const completed = won >= vol;
+
+      const card = document.createElement('div');
+      card.className = 'prize-selector-card' +
+        (selectedPrizeId === cat.id ? ' active' : '') +
+        (completed ? ' completed' : '');
+      card.innerHTML = `
+        <div class="prize-card-name">
+          <span class="prize-card-dot" style="background:${cat.color}"></span>
+          ${cat.name || 'Unnamed'}
+        </div>
+        ${cat.item ? `<div class="prize-card-item">&#127873; ${cat.item}</div>` : ''}
+        <div class="prize-card-volume">Pick: <b>${Math.max(0, vol - won)}</b> / ${vol} remaining</div>
+      `;
+
+      if(!completed){
+        card.addEventListener('click', ()=>selectPrize(cat.id));
+      }
+
+      list.appendChild(card);
+    });
+  }
+
+  function selectPrize(id){
+    if(selectedPrizeId === id){
+      selectedPrizeId = null;
+      pickCount.value = 1;
+      pickingCount.textContent = '1';
+    } else {
+      selectedPrizeId = id;
+      const cat = prizeCategories.find(c=>c.id===id);
+      if(cat){
+        const remaining = Math.max(1, (cat.volume||1) - cat.winners.length);
+        pickCount.value = remaining;
+        pickingCount.textContent = remaining;
+      }
+    }
+    renderPrizeSelector();
   }
 
   function assignWinnersToPrize(winners, round){
-    const catId = prizeAssignSelect.value;
-    if(!catId) return;
-    const cat = prizeCategories.find(c=>c.id===+catId);
+    if(!selectedPrizeId) return;
+    const cat = prizeCategories.find(c=>c.id===selectedPrizeId);
     if(!cat) return;
     winners.forEach(name => cat.winners.push({name, round}));
     renderPrizeCategories();
+    renderPrizeSelector();
+
+    // Update pick count to remaining
+    const remaining = Math.max(0, (cat.volume||1) - cat.winners.length);
+    if(remaining === 0){
+      selectedPrizeId = null;
+      pickCount.value = 1;
+      pickingCount.textContent = '1';
+      renderPrizeSelector();
+    } else {
+      pickCount.value = remaining;
+      pickingCount.textContent = remaining;
+    }
   }
 </script>
 </body>
