@@ -1068,6 +1068,7 @@
   let cardEls = [];
   let pickedSet = []; // tracks picked names across rounds (array to handle duplicate names)
   let selectedPrizeId = null; // currently selected prize category for drawing
+  let logFileHandle = null; // File System Access API handle for auto-saving log
 
   // ─── DOM ────────────────────────────────────────
   const $ = id => document.getElementById(id);
@@ -1744,6 +1745,9 @@
       if(selectedPrizeId){
         assignWinnersToPrize(winners, roundNum);
       }
+
+      // Auto-save log file
+      autoSaveLog();
     },600);
   }
 
@@ -1766,9 +1770,7 @@
   // ─── Export Log ────────────────────────────────────
   $('exportLogBtn').addEventListener('click', exportLog);
 
-  function exportLog(){
-    if(!pickHistory.length){ alert('No draw history to export.'); return; }
-
+  function generateLogContent(){
     const title = eventTitle.textContent || 'Lucky Draw';
     const now = new Date();
     const dateStr = now.toISOString().slice(0,10);
@@ -1800,7 +1802,6 @@
 
     // Full draw history
     log += '--- Draw History ---\n\n';
-    // Reverse to show chronological order (oldest first)
     [...pickHistory].reverse().forEach(item=>{
       log += 'Round #' + item.round + '  [' + item.time + ']';
       if(item.prize) log += '  Prize: ' + item.prize;
@@ -1814,17 +1815,57 @@
     log += '='.repeat(50) + '\n';
     log += '  Total Rounds: ' + roundNum + '  |  Total Picked: ' + pickedSet.length + '\n';
     log += '='.repeat(50) + '\n';
+    return log;
+  }
 
-    // Download as text file
+  function downloadLogFallback(){
+    const log = generateLogContent();
     const blob = new Blob([log], {type:'text/plain;charset=utf-8'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'LuckyDraw_Log_' + dateStr + '.txt';
+    a.download = 'LuckyDraw_Log_' + new Date().toISOString().slice(0,10) + '.txt';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
+
+  async function autoSaveLog(){
+    if(!pickHistory.length) return;
+    const log = generateLogContent();
+
+    // Use File System Access API if available
+    if('showSaveFilePicker' in window){
+      try {
+        if(!logFileHandle){
+          // First time: ask user to pick save location
+          logFileHandle = await window.showSaveFilePicker({
+            suggestedName: 'LuckyDraw_Log_' + new Date().toISOString().slice(0,10) + '.txt',
+            types: [{
+              description: 'Text Files',
+              accept: {'text/plain': ['.txt']}
+            }]
+          });
+        }
+        // Write / overwrite the file silently
+        const writable = await logFileHandle.createWritable();
+        await writable.write(log);
+        await writable.close();
+        return;
+      } catch(e){
+        if(e.name === 'AbortError') return; // user cancelled picker
+        // API error — fall through to download
+      }
+    }
+
+    // Fallback: trigger download
+    downloadLogFallback();
+  }
+
+  function exportLog(){
+    if(!pickHistory.length){ alert('No draw history to export.'); return; }
+    downloadLogFallback();
   }
 
   // ─── Confetti ───────────────────────────────────
