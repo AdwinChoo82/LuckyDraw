@@ -370,10 +370,22 @@
   .prize-pick-number {
     font-family:'Space Grotesk',sans-serif;
     font-size:2.4rem;font-weight:900;
-    background:linear-gradient(135deg,var(--primary),var(--accent));
-    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-    background-clip:text;line-height:1.1;
+    color:var(--primary);line-height:1.1;
+    background:none;border:none;
+    border-bottom:2px dashed transparent;
+    text-align:center;width:80px;outline:none;
+    margin:0 auto;display:block;
+    transition:border-color .2s;
+    -moz-appearance:textfield;
   }
+
+  .prize-pick-number::-webkit-outer-spin-button,
+  .prize-pick-number::-webkit-inner-spin-button {
+    -webkit-appearance:none;margin:0;
+  }
+
+  .prize-pick-number:hover { border-bottom-color:var(--primary-light); }
+  .prize-pick-number:focus { border-bottom-color:var(--primary); }
 
   .prize-pick-sub {
     font-family:'JetBrains Mono',monospace;
@@ -891,6 +903,7 @@
 
 <!-- Top buttons -->
 <div class="top-btns">
+  <button class="icon-btn" id="refreshBtn" title="Refresh page">&#8635;</button>
   <button class="icon-btn" id="soundToggle" title="Toggle sound">&#128266;</button>
   <button class="settings-btn" id="settingsBtn" title="Settings &amp; Data"><span class="gear-icon">&#9881;</span> Settings</button>
 </div>
@@ -987,7 +1000,7 @@
 <div class="prize-selector" id="prizeSelector">
   <div class="prize-pick-display" id="prizePickDisplay" style="display:none">
     <div class="prize-pick-label">PICK COUNT</div>
-    <div class="prize-pick-number" id="prizePickNumber">1</div>
+    <input type="number" class="prize-pick-number" id="prizePickNumber" value="1" min="1" max="999">
     <div class="prize-pick-sub" id="prizePickSub">names to draw</div>
   </div>
   <div class="prize-selector-title" id="prizeSelectorTitle" style="display:none"><span class="pdot"></span> Prize Categories</div>
@@ -1150,6 +1163,11 @@
     soundToggle.innerHTML=soundEnabled?'&#128266;':'&#128264;';
   });
 
+  // ─── Refresh ─────────────────────────────────────
+  $('refreshBtn').addEventListener('click',()=>{
+    location.reload(true);
+  });
+
   // ─── Panel ──────────────────────────────────────
   function openPanel(){ sidePanel.classList.add('open');panelOverlay.classList.add('open'); }
   function closePanel(){ sidePanel.classList.remove('open');panelOverlay.classList.remove('open'); }
@@ -1260,7 +1278,12 @@
     names.forEach(n=>{const t=document.createElement('span');t.className='pool-tag';t.textContent=n;namePool.appendChild(t)});
   }
 
-  pickCount.addEventListener('input',()=>{ pickingCount.textContent=pickCount.value||1; });
+  pickCount.addEventListener('input',()=>{
+    const v = pickCount.value||1;
+    pickingCount.textContent = v;
+    const ppn = $('prizePickNumber');
+    if(ppn) ppn.value = v;
+  });
 
   spinStyleSelect.addEventListener('change',()=>{
     if(!isAnimating && names.length) buildCards();
@@ -1794,6 +1817,13 @@
     renderPrizeSelector();
   });
 
+  // Sync left-panel pick count input → settings pick count
+  $('prizePickNumber').addEventListener('input', function(){
+    const v = Math.max(1, parseInt(this.value)||1);
+    pickCount.value = v;
+    pickingCount.textContent = v;
+  });
+
   function renderPrizeCategories(){
     prizeCategoryList.innerHTML='';
     prizeCategories.forEach((cat,ci)=>{
@@ -1910,7 +1940,7 @@
 
     // Update pick count display
     const currentCount = parseInt(pickCount.value) || 1;
-    pickNum.textContent = currentCount;
+    pickNum.value = currentCount;
     if(selectedPrizeId){
       const selCat = prizeCategories.find(c=>c.id===selectedPrizeId);
       pickSub.textContent = selCat ? (selCat.name || 'Unnamed') : 'names to draw';
