@@ -61,7 +61,8 @@
     position: relative;
     z-index: 1;
     width: 100%;
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
   }
 
   /* Header — floats at top center over the arena */
@@ -282,15 +283,21 @@
   .pick-btn:active { transform:translateY(0); }
   .pick-btn:disabled { opacity:.4;cursor:not-allowed;transform:none;box-shadow:none; }
 
-  /* ── HISTORY (below arena, scrollable) ───────────── */
+  /* ── HISTORY (right side panel) ───────────────────── */
   .history-section {
-    position: relative;
-    z-index: 1;
-    width: 100%;
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 60px 24px 80px;
-    border-top: 1px solid var(--border);
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 280px;
+    height: 100vh;
+    z-index: 20;
+    padding: 70px 16px 24px;
+    overflow-y: auto;
+    pointer-events: none;
+  }
+
+  .history-section.has-results {
+    pointer-events: auto;
   }
 
   .history-strip {
@@ -299,9 +306,9 @@
 
   .history-strip-title {
     font-family:'JetBrains Mono',monospace;
-    font-size:.8rem;color:var(--text-muted);
+    font-size:.72rem;color:var(--text-muted);
     letter-spacing:2px;text-transform:uppercase;
-    margin-bottom:16px;display:flex;align-items:center;gap:8px;
+    margin-bottom:12px;display:flex;align-items:center;gap:8px;
     font-weight:600;
   }
 
@@ -310,16 +317,18 @@
   }
 
   .history-strip-list {
-    display:flex;flex-direction:column;gap:10px;
+    display:flex;flex-direction:column;gap:8px;
   }
 
   .history-chip {
     font-family:'JetBrains Mono',monospace;
-    font-size:.82rem;padding:10px 18px;
-    background:white;border:1px solid var(--border);border-radius:12px;
+    font-size:.74rem;padding:8px 14px;
+    background:rgba(255,255,255,.92);backdrop-filter:blur(8px);
+    border:1px solid var(--border);border-radius:10px;
     color:var(--text-muted);box-shadow:var(--shadow-sm);
-    animation:tagIn .2s ease;
-    display:flex;align-items:center;gap:12px;
+    animation:tagIn .3s ease;
+    display:flex;align-items:center;gap:8px;
+    flex-wrap:wrap;
   }
 
   .history-chip b { color:var(--primary);font-weight:600; }
@@ -871,13 +880,13 @@
       <button class="pick-btn" id="pickBtn" disabled>&#127183; Start to Draw!</button>
     </div>
   </div>
+</div>
 
-  <!-- Draw Results (scrollable below) -->
-  <div class="history-section">
-    <div class="history-strip" id="historyStrip" style="display:none">
-      <div class="history-strip-title"><span class="hdot"></span> Draw Results</div>
-      <div class="history-strip-list" id="historyList"></div>
-    </div>
+<!-- Draw Results (fixed right side) -->
+<div class="history-section" id="historySection">
+  <div class="history-strip" id="historyStrip" style="display:none">
+    <div class="history-strip-title"><span class="hdot"></span> Draw Results</div>
+    <div class="history-strip-list" id="historyList"></div>
   </div>
 </div>
 
@@ -1496,26 +1505,23 @@
       const winnerCards = winnerIdxs.map(i=>cardEls[i]);
       const n = winnerCards.length;
 
-      // Winner grid layout — positioned on right side of arena
+      // Winner grid layout — centered in arena
       const cw=90, ch=90, gap=16;
       const arenaW = cardArena.offsetWidth;
       const arenaH = cardArena.offsetHeight;
-      const maxCols = Math.max(1, Math.floor((arenaW*0.4 + gap)/(cw + gap)));
+      const maxCols = Math.max(1, Math.floor((arenaW*0.5 + gap)/(cw + gap)));
       const cols = Math.min(n, maxCols);
       const rows = Math.ceil(n/cols);
       const totalW = cols*cw + (cols-1)*gap;
       const totalH = rows*ch + (rows-1)*gap;
-
-      // Offset to right side (shift right by ~30% of arena width from center)
-      const rightOffset = arenaW * 0.25;
 
       winnerCards.forEach((card, i)=>{
         card._detached = true;
         const col = i%cols, row = Math.floor(i/cols);
         const w = SIZE_W[card._sizeClass];
 
-        // Grid cell relative to arena center, shifted right
-        const cx = -totalW/2 + col*(cw+gap) + cw/2 + rightOffset;
+        // Center of grid cell relative to arena center
+        const cx = -totalW/2 + col*(cw+gap) + cw/2;
         const cy = -totalH/2 + row*(ch+gap) + ch/2;
 
         // Scale card to target size
@@ -1561,24 +1567,21 @@
 
       // Auto-assign to prize category if selected
       assignWinnersToPrize(winners, roundNum);
-
-      // Auto-scroll to results
-      setTimeout(()=>{
-        historyStrip.scrollIntoView({behavior:'smooth', block:'start'});
-      }, 400);
     },600);
   }
 
   // ─── History ────────────────────────────────────
   function renderHistory(){
-    if(!pickHistory.length){historyStrip.style.display='none';return;}
+    const section = $('historySection');
+    if(!pickHistory.length){historyStrip.style.display='none';section.classList.remove('has-results');return;}
     historyStrip.style.display='block';
+    section.classList.add('has-results');
     historyList.innerHTML='';
     pickHistory.forEach(item=>{
       const chip=document.createElement('div');
       chip.className='history-chip';
-      const prizeTag = item.prize ? `<span style="font-size:.68rem;padding:2px 8px;background:var(--primary);color:#fff;border-radius:10px;margin-left:4px">${item.prize}</span>` : '';
-      chip.innerHTML=`<b>#${item.round}</b> <span>${item.names.join(', ')}</span>${prizeTag} <span style="margin-left:auto;font-size:.7rem;color:var(--text-light)">${item.time}</span>`;
+      const prizeTag = item.prize ? `<span style="font-size:.64rem;padding:2px 6px;background:var(--primary);color:#fff;border-radius:8px">${item.prize}</span>` : '';
+      chip.innerHTML=`<b>#${item.round}</b> <span>${item.names.join(', ')}</span>${prizeTag} <span style="margin-left:auto;font-size:.65rem;color:var(--text-light)">${item.time}</span>`;
       historyList.appendChild(chip);
     });
   }
