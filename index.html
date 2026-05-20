@@ -352,6 +352,35 @@
     pointer-events: auto;
   }
 
+  .prize-pick-display {
+    text-align:center;margin-bottom:14px;
+    padding:14px 10px;
+    background:rgba(255,255,255,.92);backdrop-filter:blur(8px);
+    border:2px solid var(--border);border-radius:14px;
+    box-shadow:var(--shadow-sm);
+  }
+
+  .prize-pick-label {
+    font-family:'JetBrains Mono',monospace;
+    font-size:.62rem;color:var(--text-light);
+    letter-spacing:2px;text-transform:uppercase;
+    margin-bottom:4px;
+  }
+
+  .prize-pick-number {
+    font-family:'Space Grotesk',sans-serif;
+    font-size:2.4rem;font-weight:900;
+    background:linear-gradient(135deg,var(--primary),var(--accent));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    background-clip:text;line-height:1.1;
+  }
+
+  .prize-pick-sub {
+    font-family:'JetBrains Mono',monospace;
+    font-size:.62rem;color:var(--text-muted);
+    margin-top:2px;
+  }
+
   .prize-selector-title {
     font-family:'JetBrains Mono',monospace;
     font-size:.72rem;color:var(--text-muted);
@@ -956,6 +985,11 @@
 
 <!-- Prize Selector (left side) -->
 <div class="prize-selector" id="prizeSelector">
+  <div class="prize-pick-display" id="prizePickDisplay" style="display:none">
+    <div class="prize-pick-label">PICK COUNT</div>
+    <div class="prize-pick-number" id="prizePickNumber">1</div>
+    <div class="prize-pick-sub" id="prizePickSub">names to draw</div>
+  </div>
   <div class="prize-selector-title" id="prizeSelectorTitle" style="display:none"><span class="pdot"></span> Prize Categories</div>
   <div class="prize-selector-list" id="prizeSelectorList"></div>
 </div>
@@ -1613,12 +1647,9 @@
       const winnerCards = winnerIdxs.map(i=>cardEls[i]);
       const n = winnerCards.length;
 
-      // Winner grid layout — centered in arena
+      // Winner grid layout — centered in arena, 5 per row
       const cw=90, ch=90, gap=16;
-      const arenaW = cardArena.offsetWidth;
-      const arenaH = cardArena.offsetHeight;
-      const maxCols = Math.max(1, Math.floor((arenaW*0.5 + gap)/(cw + gap)));
-      const cols = Math.min(n, maxCols);
+      const cols = Math.min(n, 5);
       const rows = Math.ceil(n/cols);
       const totalW = cols*cw + (cols-1)*gap;
       const totalH = rows*ch + (rows-1)*gap;
@@ -1861,16 +1892,32 @@
     const list = $('prizeSelectorList');
     const title = $('prizeSelectorTitle');
     const panel = $('prizeSelector');
+    const pickDisplay = $('prizePickDisplay');
+    const pickNum = $('prizePickNumber');
+    const pickSub = $('prizePickSub');
 
     if(!prizeCategories.length){
       title.style.display='none';
+      pickDisplay.style.display='none';
       list.innerHTML='';
       panel.classList.remove('has-prizes');
       return;
     }
 
     title.style.display='flex';
+    pickDisplay.style.display='block';
     panel.classList.add('has-prizes');
+
+    // Update pick count display
+    const currentCount = parseInt(pickCount.value) || 1;
+    pickNum.textContent = currentCount;
+    if(selectedPrizeId){
+      const selCat = prizeCategories.find(c=>c.id===selectedPrizeId);
+      pickSub.textContent = selCat ? (selCat.name || 'Unnamed') : 'names to draw';
+    } else {
+      pickSub.textContent = 'names to draw';
+    }
+
     list.innerHTML='';
 
     prizeCategories.forEach(cat=>{
@@ -1934,6 +1981,7 @@
     } else {
       pickCount.value = remaining;
       pickingCount.textContent = remaining;
+      renderPrizeSelector();
     }
   }
 </script>
