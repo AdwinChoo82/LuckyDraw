@@ -497,6 +497,70 @@
 
   .prize-cat-volume-input:focus { border-color:var(--primary-light); }
 
+  /* Prize photo upload */
+  .prize-cat-photo-row {
+    display:flex;align-items:center;gap:10px;margin-bottom:10px;
+  }
+
+  .prize-cat-photo-preview {
+    width:48px;height:48px;border-radius:8px;
+    border:1px solid var(--border);object-fit:cover;
+    display:none;
+  }
+
+  .prize-cat-photo-preview.show { display:block; }
+
+  .prize-cat-photo-btn {
+    background:none;border:1px dashed var(--border);border-radius:8px;
+    padding:6px 12px;cursor:pointer;
+    font-family:'JetBrains Mono',monospace;font-size:.68rem;
+    color:var(--text-light);transition:all .2s;
+  }
+
+  .prize-cat-photo-btn:hover {
+    border-color:var(--primary-light);color:var(--primary);
+  }
+
+  .prize-cat-photo-remove {
+    background:none;border:none;color:var(--text-light);
+    cursor:pointer;font-size:12px;display:none;
+  }
+
+  .prize-cat-photo-remove.show { display:inline; }
+  .prize-cat-photo-remove:hover { color:var(--accent-warm); }
+
+  /* Center prize image during spin */
+  .arena-prize-img {
+    position:absolute;
+    left:50%;top:50%;
+    transform:translate(-50%,-50%);
+    width:120px;height:120px;
+    border-radius:16px;
+    object-fit:cover;
+    box-shadow:0 4px 24px rgba(0,0,0,.12);
+    border:3px solid rgba(255,255,255,.7);
+    z-index:5;
+    opacity:0;
+    transition:opacity .4s ease;
+    pointer-events:none;
+  }
+
+  .arena-prize-img.visible { opacity:1; }
+
+  /* Theme selector */
+  .theme-selector-row {
+    display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;
+  }
+
+  .theme-chip {
+    width:32px;height:32px;border-radius:50%;cursor:pointer;
+    border:3px solid transparent;transition:all .2s;
+    position:relative;
+  }
+
+  .theme-chip:hover { transform:scale(1.15); }
+  .theme-chip.active { border-color:var(--text);transform:scale(1.15); }
+
   /* ── TOP BUTTONS ───────────────────────────────── */
   .top-btns {
     position:fixed;top:20px;right:20px;z-index:50;
@@ -984,6 +1048,19 @@
           <option value="helix" selected>🧬 DNA Helix</option>
         </select>
       </div>
+      <div class="config-row" style="margin-top:14px">
+        <label>Theme:</label>
+      </div>
+      <div class="theme-selector-row" id="themeSelector">
+        <div class="theme-chip active" data-theme="default" style="background:linear-gradient(135deg,#6C5CE7,#A29BFE)" title="Purple (Default)"></div>
+        <div class="theme-chip" data-theme="ocean" style="background:linear-gradient(135deg,#0984E3,#74B9FF)" title="Ocean Blue"></div>
+        <div class="theme-chip" data-theme="sunset" style="background:linear-gradient(135deg,#E17055,#FDCB6E)" title="Sunset"></div>
+        <div class="theme-chip" data-theme="forest" style="background:linear-gradient(135deg,#00B894,#55EFC4)" title="Forest"></div>
+        <div class="theme-chip" data-theme="rose" style="background:linear-gradient(135deg,#FD79A8,#E84393)" title="Rose"></div>
+        <div class="theme-chip" data-theme="dark" style="background:linear-gradient(135deg,#2D3436,#636E72)" title="Dark"></div>
+        <div class="theme-chip" data-theme="gold" style="background:linear-gradient(135deg,#FDCB6E,#E17055)" title="Gold"></div>
+        <div class="theme-chip" data-theme="neon" style="background:linear-gradient(135deg,#00F5A0,#00D9F5)" title="Neon"></div>
+      </div>
     </div>
 
     <!-- Pool preview -->
@@ -1041,6 +1118,7 @@
 
     <div class="card-arena" id="cardArena">
       <div class="card-arena-empty" id="arenaEmpty">Open settings to load names</div>
+      <img class="arena-prize-img" id="arenaPrizeImg" src="" alt="">
     </div>
 
     <div class="bottom-controls">
@@ -1930,7 +2008,7 @@
   addCategoryBtn.addEventListener('click',()=>{
     const id = Date.now();
     const color = PRIZE_COLORS[prizeCategories.length % PRIZE_COLORS.length];
-    prizeCategories.push({ id, name:'', item:'', volume:1, color, winners:[] });
+    prizeCategories.push({ id, name:'', item:'', volume:1, color, photo:'', winners:[] });
     renderPrizeCategories();
     renderPrizeSelector();
   });
@@ -1962,6 +2040,12 @@
             <label>Qty:</label>
             <input type="number" class="prize-cat-volume-input" value="${cat.volume}" min="1" max="999" data-idx="${ci}">
           </div>
+        </div>
+        <div class="prize-cat-photo-row">
+          <img class="prize-cat-photo-preview ${cat.photo?'show':''}" src="${cat.photo}" data-idx="${ci}">
+          <button class="prize-cat-photo-btn" data-idx="${ci}">&#128247; ${cat.photo?'Change':'Upload'} Photo</button>
+          <button class="prize-cat-photo-remove ${cat.photo?'show':''}" data-idx="${ci}" title="Remove photo">&#10005;</button>
+          <input type="file" accept="image/*" style="display:none" data-idx="${ci}" class="prize-cat-photo-input">
         </div>
         <div class="prize-cat-winners" id="prizeWinners_${cat.id}">
           ${cat.winners.length ? cat.winners.map((w,wi)=>`
@@ -2033,6 +2117,41 @@
         renderPrizeSelector();
       });
     });
+
+    // Event: photo upload
+    prizeCategoryList.querySelectorAll('.prize-cat-photo-btn').forEach(btn=>{
+      btn.addEventListener('click',e=>{
+        const idx = +e.target.dataset.idx;
+        prizeCategoryList.querySelectorAll('.prize-cat-photo-input')[idx].click();
+      });
+    });
+
+    prizeCategoryList.querySelectorAll('.prize-cat-photo-input').forEach(inp=>{
+      inp.addEventListener('change',e=>{
+        const idx = +e.target.dataset.idx;
+        const file = e.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+          prizeCategories[idx].photo = ev.target.result;
+          renderPrizeCategories();
+          renderPrizeSelector();
+          updateArenaPrizeImg();
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    // Event: remove photo
+    prizeCategoryList.querySelectorAll('.prize-cat-photo-remove').forEach(btn=>{
+      btn.addEventListener('click',e=>{
+        const idx = +e.target.dataset.idx;
+        prizeCategories[idx].photo = '';
+        renderPrizeCategories();
+        renderPrizeSelector();
+        updateArenaPrizeImg();
+      });
+    });
   }
 
   // ─── Prize Selector (left panel) ────────────────
@@ -2082,6 +2201,7 @@
           <span class="prize-card-dot" style="background:${cat.color}"></span>
           ${cat.name || 'Unnamed'}
         </div>
+        ${cat.photo ? `<img src="${cat.photo}" style="width:100%;height:50px;object-fit:cover;border-radius:6px;margin-bottom:4px">` : ''}
         ${cat.item ? `<div class="prize-card-item">&#127873; ${cat.item}</div>` : ''}
         <div class="prize-card-volume">Pick: <b>${Math.max(0, vol - won)}</b> / ${vol} remaining</div>
       `;
@@ -2112,6 +2232,7 @@
       }
     }
     renderPrizeSelector();
+    updateArenaPrizeImg();
   }
 
   function assignWinnersToPrize(winners, round){
@@ -2135,7 +2256,59 @@
       if(ppn) ppn.value = remaining;
     }
     renderPrizeSelector();
+    updateArenaPrizeImg();
   }
+
+  // ─── Arena Prize Image ─────────────────────────────
+  function updateArenaPrizeImg(){
+    const img = $('arenaPrizeImg');
+    if(selectedPrizeId){
+      const cat = prizeCategories.find(c=>c.id===selectedPrizeId);
+      if(cat && cat.photo){
+        img.src = cat.photo;
+        img.classList.add('visible');
+        return;
+      }
+    }
+    img.classList.remove('visible');
+    img.src = '';
+  }
+
+  // ─── Theme System ─────────────────────────────────
+  const THEMES = {
+    default: { primary:'#6C5CE7', primaryLight:'#A29BFE', accent:'#00CEC9', accentWarm:'#FD79A8', bg:'#FAFBFF', text:'#2D3436', textMuted:'#636E72', textLight:'#B2BEC3', border:'#E8ECF4' },
+    ocean:   { primary:'#0984E3', primaryLight:'#74B9FF', accent:'#00CEC9', accentWarm:'#FD79A8', bg:'#F0F8FF', text:'#2D3436', textMuted:'#636E72', textLight:'#B2BEC3', border:'#D6EAF8' },
+    sunset:  { primary:'#E17055', primaryLight:'#FAB1A0', accent:'#FDCB6E', accentWarm:'#E84393', bg:'#FFF8F0', text:'#2D3436', textMuted:'#636E72', textLight:'#B2BEC3', border:'#FDEBD0' },
+    forest:  { primary:'#00B894', primaryLight:'#55EFC4', accent:'#00CEC9', accentWarm:'#FD79A8', bg:'#F0FFF4', text:'#2D3436', textMuted:'#636E72', textLight:'#B2BEC3', border:'#D5F5E3' },
+    rose:    { primary:'#E84393', primaryLight:'#FD79A8', accent:'#A29BFE', accentWarm:'#FD79A8', bg:'#FFF0F6', text:'#2D3436', textMuted:'#636E72', textLight:'#B2BEC3', border:'#F8D7E8' },
+    dark:    { primary:'#A29BFE', primaryLight:'#6C5CE7', accent:'#00CEC9', accentWarm:'#FD79A8', bg:'#1A1A2E', text:'#EAEAEA', textMuted:'#B0B0B0', textLight:'#666', border:'#333' },
+    gold:    { primary:'#D4A017', primaryLight:'#FDCB6E', accent:'#E17055', accentWarm:'#FD79A8', bg:'#FFFDF5', text:'#2D3436', textMuted:'#636E72', textLight:'#B2BEC3', border:'#F5E6CC' },
+    neon:    { primary:'#00F5A0', primaryLight:'#00D9F5', accent:'#00F5A0', accentWarm:'#FF6FD8', bg:'#0A0A1A', text:'#EAEAEA', textMuted:'#B0B0B0', textLight:'#555', border:'#222' },
+  };
+
+  function applyTheme(name){
+    const t = THEMES[name];
+    if(!t) return;
+    const root = document.documentElement;
+    root.style.setProperty('--primary', t.primary);
+    root.style.setProperty('--primary-light', t.primaryLight);
+    root.style.setProperty('--accent', t.accent);
+    root.style.setProperty('--accent-warm', t.accentWarm);
+    root.style.setProperty('--bg', t.bg);
+    root.style.setProperty('--text', t.text);
+    root.style.setProperty('--text-muted', t.textMuted);
+    root.style.setProperty('--text-light', t.textLight);
+    root.style.setProperty('--border', t.border);
+
+    // Update active chip
+    document.querySelectorAll('.theme-chip').forEach(c=>{
+      c.classList.toggle('active', c.dataset.theme===name);
+    });
+  }
+
+  document.querySelectorAll('.theme-chip').forEach(chip=>{
+    chip.addEventListener('click',()=>applyTheme(chip.dataset.theme));
+  });
 </script>
 </body>
 </html>
