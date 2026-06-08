@@ -1046,6 +1046,10 @@
           <option value="vortex">🌪️ Vortex</option>
           <option value="ferris">🎡 Ferris Wheel</option>
           <option value="helix" selected>🧬 DNA Helix</option>
+          <option value="cascade">🌊 Cascade</option>
+          <option value="orbit">💫 Orbit Ring</option>
+          <option value="matrix">🟩 Matrix Rain</option>
+          <option value="firework">🎆 Firework</option>
         </select>
       </div>
       <div class="config-row" style="margin-top:14px">
@@ -1599,12 +1603,143 @@
     });
   }
 
+  // ─── Render: Cascade (waterfall) ───────────────────
+  function renderCascade(){
+    const P = 500;
+    const a = globeAngle * Math.PI / 180;
+    const R = sphereR;
+
+    cardEls.forEach(card=>{
+      if(card._detached) return;
+      const t = card._total === 1 ? 0.5 : card._idx / (card._total - 1);
+      const col = card._idx % 4;
+      const row = Math.floor(card._idx / 4);
+      const totalRows = Math.ceil(card._total / 4);
+
+      const xSpread = (col - 1.5) * (R * 0.55);
+      const yBase = (row / Math.max(1, totalRows - 1) - 0.5) * R * 2;
+      const yOffset = Math.sin(a * 2 + col * 1.5 + row * 0.8) * R * 0.3;
+      const zWave = Math.cos(a + col * Math.PI * 0.5 + row * 0.5) * R * 0.5;
+
+      const fov = P / (P + zWave);
+      const sx = xSpread * fov;
+      const sy = (yBase + yOffset) * fov;
+      const scale = fov * card._baseScale;
+
+      const w = SIZE_W[card._sizeClass], h = SIZE_H[card._sizeClass];
+      card.style.transform = `translate(${(sx - w/2).toFixed(1)}px, ${(sy - h/2).toFixed(1)}px) scale(${scale.toFixed(3)})`;
+      card.style.zIndex = Math.round((zWave + 200) * 10);
+      const depth = (zWave + R) / (2 * R);
+      card.style.opacity = (0.2 + 0.8 * Math.max(0, Math.min(1, depth))).toFixed(2);
+    });
+  }
+
+  // ─── Render: Orbit Ring ────────────────────────────
+  function renderOrbit(){
+    const P = 500;
+    const a = globeAngle * Math.PI / 180;
+    const R = sphereR;
+
+    cardEls.forEach(card=>{
+      if(card._detached) return;
+      const t = card._total === 1 ? 0 : card._idx / card._total;
+      const ring = Math.floor(card._idx / 8);
+      const posInRing = card._idx % 8;
+      const ringAngle = (posInRing / 8) * Math.PI * 2 + a * (1 + ring * 0.3);
+      const ringRadius = R * (0.5 + ring * 0.35);
+      const tilt = ring * 0.3;
+
+      const x = ringRadius * Math.sin(ringAngle);
+      const z = ringRadius * Math.cos(ringAngle) * Math.cos(tilt);
+      const y = ringRadius * Math.cos(ringAngle) * Math.sin(tilt) * 0.3;
+
+      const fov = P / (P + z);
+      const sx = x * fov;
+      const sy = y * fov;
+      const scale = fov * card._baseScale;
+
+      const w = SIZE_W[card._sizeClass], h = SIZE_H[card._sizeClass];
+      card.style.transform = `translate(${(sx - w/2).toFixed(1)}px, ${(sy - h/2).toFixed(1)}px) scale(${scale.toFixed(3)})`;
+      card.style.zIndex = Math.round((z + 200) * 10);
+      const depth = (z + ringRadius) / (2 * ringRadius);
+      card.style.opacity = (0.15 + 0.85 * Math.max(0, Math.min(1, depth))).toFixed(2);
+    });
+  }
+
+  // ─── Render: Matrix Rain ──────────────────────────
+  function renderMatrix(){
+    const P = 500;
+    const a = globeAngle;
+    const R = sphereR;
+
+    cardEls.forEach(card=>{
+      if(card._detached) return;
+      const cols = Math.min(6, card._total);
+      const col = card._idx % cols;
+      const xSpread = (col - (cols-1)/2) * (R * 0.45);
+
+      // Each card falls at different speed and phase
+      const speed = 1.5 + (card._idx * 0.7) % 2;
+      const phase = card._idx * 137.5; // golden angle offset
+      const yPos = ((a * speed + phase) % (R * 3)) - R * 1.5;
+      const zWobble = Math.sin(a * 0.02 + card._idx) * R * 0.3;
+
+      const fov = P / (P + zWobble);
+      const sx = xSpread * fov;
+      const sy = yPos * fov * 0.6;
+      const scale = fov * card._baseScale;
+
+      const w = SIZE_W[card._sizeClass], h = SIZE_H[card._sizeClass];
+      card.style.transform = `translate(${(sx - w/2).toFixed(1)}px, ${(sy - h/2).toFixed(1)}px) scale(${scale.toFixed(3)})`;
+      card.style.zIndex = Math.round((zWobble + 200) * 10);
+      // Fade based on vertical position
+      const vFade = 1 - Math.abs(yPos) / (R * 1.5);
+      card.style.opacity = (0.1 + 0.9 * Math.max(0, Math.min(1, vFade))).toFixed(2);
+    });
+  }
+
+  // ─── Render: Firework ─────────────────────────────
+  function renderFirework(){
+    const P = 500;
+    const a = globeAngle * Math.PI / 180;
+    const R = sphereR;
+
+    cardEls.forEach(card=>{
+      if(card._detached) return;
+      const t = card._total === 1 ? 0 : card._idx / card._total;
+      const angle = t * Math.PI * 2;
+      const pulse = 0.6 + Math.sin(a * 2) * 0.4; // breathing radius
+
+      const layerAngle = angle + (card._idx % 3) * (Math.PI * 2 / 3);
+      const radius = R * pulse * (0.4 + (card._idx % 3) * 0.3);
+
+      const x = radius * Math.sin(layerAngle + a);
+      const y = radius * Math.cos(layerAngle + a) * 0.85;
+      const z = Math.sin(layerAngle + a * 1.5) * R * 0.4;
+
+      const fov = P / (P + z);
+      const sx = x * fov;
+      const sy = y * fov;
+      const scale = fov * card._baseScale * (0.8 + pulse * 0.3);
+
+      const w = SIZE_W[card._sizeClass], h = SIZE_H[card._sizeClass];
+      card.style.transform = `translate(${(sx - w/2).toFixed(1)}px, ${(sy - h/2).toFixed(1)}px) scale(${scale.toFixed(3)})`;
+      card.style.zIndex = Math.round((z + 200) * 10);
+      const depth = (z + R) / (2 * R);
+      card.style.opacity = (0.2 + 0.8 * Math.max(0, Math.min(1, depth))).toFixed(2);
+    });
+  }
+
   // ─── Render dispatcher ────────────────────────────
   function renderCards(){
     const style = spinStyleSelect.value;
     if(style === 'vortex') renderVortex();
     else if(style === 'ferris') renderFerris();
     else if(style === 'helix') renderHelix();
+    else if(style === 'cascade') renderCascade();
+    else if(style === 'orbit') renderOrbit();
+    else if(style === 'matrix') renderMatrix();
+    else if(style === 'firework') renderFirework();
     else renderGlobe();
   }
 
