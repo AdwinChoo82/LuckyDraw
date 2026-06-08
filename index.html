@@ -530,22 +530,39 @@
   .prize-cat-photo-remove:hover { color:var(--accent-warm); }
 
   /* Center prize image during spin */
-  .arena-prize-img {
+  .arena-prize-img-wrap {
     position:absolute;
     left:50%;top:50%;
     transform:translate(-50%,-50%);
-    width:120px;height:120px;
-    border-radius:16px;
-    object-fit:cover;
-    box-shadow:0 4px 24px rgba(0,0,0,.12);
-    border:3px solid rgba(255,255,255,.7);
     z-index:5;
     opacity:0;
     transition:opacity .4s ease;
     pointer-events:none;
+    display:flex;flex-direction:column;align-items:center;gap:8px;
   }
 
-  .arena-prize-img.visible { opacity:1; }
+  .arena-prize-img-wrap.visible { opacity:1; }
+
+  .arena-prize-img {
+    width:200px;height:200px;
+    border-radius:18px;
+    object-fit:cover;
+    box-shadow:0 8px 40px rgba(0,0,0,.15);
+    border:4px solid rgba(255,255,255,.8);
+  }
+
+  .arena-prize-label {
+    font-family:'Space Grotesk',sans-serif;
+    font-size:1.1rem;font-weight:700;
+    color:var(--text);
+    background:rgba(255,255,255,.85);
+    backdrop-filter:blur(8px);
+    padding:6px 18px;border-radius:20px;
+    box-shadow:0 2px 12px rgba(0,0,0,.08);
+    text-align:center;
+    max-width:220px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
 
   /* Theme selector */
   .theme-selector-row {
@@ -1122,7 +1139,10 @@
 
     <div class="card-arena" id="cardArena">
       <div class="card-arena-empty" id="arenaEmpty">Open settings to load names</div>
-      <img class="arena-prize-img" id="arenaPrizeImg" src="" alt="">
+      <div class="arena-prize-img-wrap" id="arenaPrizeWrap">
+        <img class="arena-prize-img" id="arenaPrizeImg" src="" alt="">
+        <div class="arena-prize-label" id="arenaPrizeLabel"></div>
+      </div>
     </div>
 
     <div class="bottom-controls">
@@ -2396,17 +2416,22 @@
 
   // ─── Arena Prize Image ─────────────────────────────
   function updateArenaPrizeImg(){
+    const wrap = $('arenaPrizeWrap');
     const img = $('arenaPrizeImg');
+    const label = $('arenaPrizeLabel');
     if(selectedPrizeId){
       const cat = prizeCategories.find(c=>c.id===selectedPrizeId);
       if(cat && cat.photo){
         img.src = cat.photo;
-        img.classList.add('visible');
+        label.textContent = cat.item || cat.name || '';
+        label.style.display = (cat.item || cat.name) ? 'block' : 'none';
+        wrap.classList.add('visible');
         return;
       }
     }
-    img.classList.remove('visible');
+    wrap.classList.remove('visible');
     img.src = '';
+    label.textContent = '';
   }
 
   // ─── Theme System ─────────────────────────────────
